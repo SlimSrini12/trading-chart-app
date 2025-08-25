@@ -1,80 +1,92 @@
-# Automated Trading Charts
+# 📈 Trading Chart App with Support/Resistance Levels
 
-A Streamlit web application that generates professional trading charts for any stock using free Python libraries.
+A professional Streamlit-based trading chart application designed for scalpers and day traders. Features accurate support/resistance level detection and multiple timeframes from 1-minute to weekly charts.
 
-## Features
+## 🚀 Features
 
-- **Interactive Charts**: Choose between Plotly (interactive) and mplfinance (static) charts
-- **Multiple Chart Types**: Candlestick, OHLC, and Line charts
-- **Technical Indicators**: Moving averages with customizable periods
-- **Volume Analysis**: Optional volume bars with color coding
-- **Real-time Data**: Fetches live data from Yahoo Finance
-- **Flexible Time Periods**: 1 month to 5 years of historical data
-- **Stock Metrics**: Current price, daily change, volume, and 52-week high
+### **Multi-Timeframe Analysis**
+- **Scalping Timeframes:** 1m, 3m, 5m, 15m, 30m, 1h, 4h
+- **Higher Timeframes:** 1d, 1w for trend analysis
+- **Adaptive sensitivity** based on selected timeframe
 
-## Installation
+### **Technical Analysis**
+- **Support/Resistance Levels:** Horizontal levels with touch count and distance from current price
+- **Trend Lines:** Diagonal trend lines connecting swing points
+- **Price Action Analysis:** Recent highs/lows, volatility, momentum
+- **Trading Signals:** Clear buy/sell zone indicators
 
-1. Clone or download this repository
-2. Install the required packages:
+### **Scalping Dashboard**
+- **Chart Time Range:** Exact start/end times and candle count
+- **Level Analysis:** Detailed support/resistance with distances
+- **Volatility Metrics:** Price movement and volume analysis
+- **Position Indicators:** Current price position within range
+
+## 🛠️ Installation
+
+### **Method 1: Local Installation**
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/trading-chart-app.git
+cd trading-chart-app
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-## Usage
-
-1. Run the Streamlit app:
-```bash
+# Run the application
 streamlit run app.py
 ```
 
-2. Open your browser and navigate to the provided URL (usually `http://localhost:8501`)
-
-3. Use the sidebar to:
-   - Enter a stock symbol (e.g., AAPL, GOOGL, TSLA)
-   - Select time period
-   - Choose chart type and indicators
-   - Generate the chart
-
-## Libraries Used
-
-- **streamlit**: Web app framework
-- **yfinance**: Yahoo Finance data fetching
-- **mplfinance**: Static candlestick charts
-- **plotly**: Interactive charts
-- **pandas**: Data manipulation
-- **numpy**: Numerical operations
-
-## Example Usage
-
-```python
-# Popular stock symbols to try:
-# AAPL - Apple Inc.
-# GOOGL - Alphabet Inc.
-# TSLA - Tesla Inc.
-# MSFT - Microsoft Corporation
-# AMZN - Amazon.com Inc.
-# NVDA - NVIDIA Corporation
+### **Method 2: Using run.bat (Windows)**
+```bash
+# Simply double-click run.bat or execute:
+run.bat
 ```
 
-## Chart Types
+## 📊 Usage
 
-1. **Candlestick**: Traditional OHLC representation with filled/hollow candles
-2. **OHLC**: Open-High-Low-Close bars
-3. **Line**: Simple closing price line chart
+1. **Enter Stock Symbol:** Any valid ticker (AAPL, TSLA, SPY, etc.)
+2. **Select Timeframe:** Choose from 1-minute to weekly charts
+3. **Generate Chart:** Click the button to load data and analysis
+4. **Analyze Levels:** Review support/resistance levels and distances
+5. **Check Signals:** Look for trading opportunities in the scalping dashboard
 
-## Technical Indicators
+## 🎯 Perfect for Scalping
 
-- **Moving Averages**: 5, 10, 20, 50, and 200-period options
-- **Volume**: Color-coded volume bars (red for down days, green for up days)
+- **Ultra-sensitive level detection** for minute charts
+- **Real-time price position** within support/resistance zones
+- **Volatility and momentum indicators**
+- **Clear entry/exit signals**
 
-## Deployment
+## 📋 Requirements
 
-To deploy on Streamlit Cloud:
+- Python 3.7+
+- Streamlit
+- yfinance
+- plotly
+- pandas
+- numpy
+- scipy
+- scikit-learn
 
-1. Push your code to GitHub
-2. Connect your GitHub repo to Streamlit Cloud
-3. Deploy with one click
+## 🌐 Live Demo
 
-## License
+[Coming Soon - Hosted Version]
 
-This project is open source and available under the MIT License.
+## 📸 Screenshots
+
+[Add screenshots of your app here]
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## ⚠️ Disclaimer
+
+This application is for educational and informational purposes only. Not financial advice. Trade at your own risk.
