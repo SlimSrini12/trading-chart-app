@@ -15,6 +15,13 @@ A professional Streamlit-based trading chart application designed for scalpers a
 - **Price Action Analysis:** Recent highs/lows, volatility, momentum
 - **Trading Signals:** Clear buy/sell zone indicators
 
+### **🤖 AI-Powered Analysis**
+- **Market Structure Analysis:** AI interpretation of price action and key levels
+- **Trading Opportunities:** Specific entry/exit points with risk management
+- **Multi-Timeframe Analysis:** Cross-timeframe confirmation and strategy
+- **Risk Assessment:** AI-powered risk factors and market timing
+- **Smart Signals:** AI-enhanced trading signals with confidence levels
+
 ### **Scalping Dashboard**
 - **Chart Time Range:** Exact start/end times and candle count
 - **Level Analysis:** Detailed support/resistance with distances
@@ -67,6 +74,16 @@ run.bat
 - numpy
 - scipy
 - scikit-learn
+- openai (for AI analysis)
+- python-dotenv
+
+## 🔑 API Setup
+
+### **OpenAI API Key (for AI Analysis)**
+1. Go to [platform.openai.com](https://platform.openai.com)
+2. Create an account and get your API key
+3. Enter the API key in the sidebar
+4. **Cost:** ~$0.01-0.05 per analysis (very affordable)
 
 ## 🌐 Live Demo
 
