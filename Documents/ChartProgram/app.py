@@ -6,9 +6,10 @@ import numpy as np
 from scipy.signal import argrelextrema
 import openai
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from dotenv import load_dotenv
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -696,6 +697,92 @@ def calculate_volume_profile(data):
         'poc': sorted_levels[0][0] if sorted_levels else None,  # Point of Control
         'high_volume_levels': [level[0] for level in sorted_levels[:5]]
     }
+
+def get_finnhub_api_key():
+    """Get Finnhub API key from environment"""
+    api_key = os.getenv("FINNHUB_API_KEY")
+    if not api_key or api_key == "your_finnhub_api_key_here":
+        return None
+    return api_key
+
+def make_finnhub_request(endpoint, params=None):
+    """Make a request to Finnhub API"""
+    api_key = get_finnhub_api_key()
+    if not api_key:
+        return None
+    
+    base_url = "https://finnhub.io/api/v1"
+    url = f"{base_url}/{endpoint}"
+    
+    if params is None:
+        params = {}
+    params['token'] = api_key
+    
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error making Finnhub request: {str(e)}")
+        return None
+    except json.JSONDecodeError as e:
+        st.error(f"Error parsing Finnhub response: {str(e)}")
+        return None
+
+def get_real_time_quote(symbol):
+    """Get real-time quote data from Finnhub"""
+    return make_finnhub_request("quote", {"symbol": symbol})
+
+def get_company_profile(symbol):
+    """Get company profile from Finnhub"""
+    return make_finnhub_request("stock/profile2", {"symbol": symbol})
+
+def get_basic_financials(symbol):
+    """Get basic financial metrics from Finnhub"""
+    return make_finnhub_request("stock/metric", {"symbol": symbol, "metric": "all"})
+
+def get_news_sentiment(symbol):
+    """Get news sentiment from Finnhub"""
+    return make_finnhub_request("news-sentiment", {"symbol": symbol})
+
+def get_recommendation_trends(symbol):
+    """Get analyst recommendation trends from Finnhub"""
+    return make_finnhub_request("stock/recommendation", {"symbol": symbol})
+
+def get_earnings_calendar(symbol):
+    """Get earnings calendar from Finnhub"""
+    # Get earnings for next 30 days
+    end_date = datetime.now() + timedelta(days=30)
+    start_date = datetime.now()
+    
+    return make_finnhub_request("calendar/earnings", {
+        "from": start_date.strftime('%Y-%m-%d'),
+        "to": end_date.strftime('%Y-%m-%d'),
+        "symbol": symbol
+    })
+
+def get_insider_transactions(symbol):
+    """Get insider transactions from Finnhub"""
+    # Get insider transactions for last 30 days
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=30)
+    
+    return make_finnhub_request("stock/insider-transactions", {
+        "symbol": symbol,
+        "from": start_date.strftime('%Y-%m-%d'),
+        "to": end_date.strftime('%Y-%m-%d')
+    })
+
+def get_company_news(symbol, days=7):
+    """Get recent company news from Finnhub"""
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+    
+    return make_finnhub_request("company-news", {
+        "symbol": symbol,
+        "from": start_date.strftime('%Y-%m-%d'),
+        "to": end_date.strftime('%Y-%m-%d')
+    })
 
 def get_chart_config(timeframe, user_settings):
     """Get chart configuration based on user selections and timeframe"""
@@ -1453,6 +1540,222 @@ if st.sidebar.button("Generate Chart", type="primary"):
                         st.write(f"• **EMA21:** ${ema21:.2f}")
                     st.write(f"• **Trend:** {ema_trend}")
 
+        
+        # Real-time Data Section from Finnhub
+        st.subheader("📡 Real-Time Market Data (Finnhub)")
+        
+        # Check for Finnhub API key
+        finnhub_api_key = get_finnhub_api_key()
+        
+        if not finnhub_api_key:
+            st.warning("🔑 Add your Finnhub API key to .env file to enable real-time data")
+            st.info("""
+            **To get Finnhub API key:**
+            1. Go to finnhub.io
+            2. Sign up for free account
+            3. Get your API key
+            4. Add `FINNHUB_API_KEY=your_key_here` to your .env file
+            
+            **Free tier includes:** Real-time quotes, company data, analyst recommendations
+            """)
+        else:
+            st.success("✅ Finnhub API connected - Real-time data enabled")
+            
+            # Fetch all available data
+            with st.spinner("📡 Fetching real-time data from Finnhub..."):
+                quote_data = get_real_time_quote(symbol)
+                company_profile = get_company_profile(symbol)
+                basic_financials = get_basic_financials(symbol)
+                recommendations = get_recommendation_trends(symbol)
+                earnings = get_earnings_calendar(symbol)
+                insider_data = get_insider_transactions(symbol)
+                company_news = get_company_news(symbol)
+            
+            # 1. REAL-TIME QUOTE DATA (RAW)
+            st.write("### 📈 Real-Time Quote Data")
+            if quote_data:
+                col1, col2, col3, col4, col5 = st.columns(5)
+                with col1:
+                    st.metric("Current Price", f"${quote_data.get('c', 0):.2f}")
+                with col2:
+                    change = quote_data.get('d', 0)
+                    change_pct = quote_data.get('dp', 0)
+                    st.metric("Change", f"${change:.2f}", f"{change_pct:.2f}%")
+                with col3:
+                    st.metric("Day High", f"${quote_data.get('h', 0):.2f}")
+                with col4:
+                    st.metric("Day Low", f"${quote_data.get('l', 0):.2f}")
+                with col5:
+                    st.metric("Prev Close", f"${quote_data.get('pc', 0):.2f}")
+                
+                # Show raw quote data
+                with st.expander("📊 Raw Quote Data"):
+                    st.json(quote_data)
+            else:
+                st.error("❌ Failed to fetch quote data")
+            
+            # 2. COMPANY PROFILE (RAW)
+            st.write("### 🏢 Company Profile")
+            if company_profile:
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write(f"**Name:** {company_profile.get('name', 'N/A')}")
+                    st.write(f"**Ticker:** {company_profile.get('ticker', 'N/A')}")
+                    st.write(f"**Exchange:** {company_profile.get('exchange', 'N/A')}")
+                    st.write(f"**Industry:** {company_profile.get('finnhubIndustry', 'N/A')}")
+                    st.write(f"**Country:** {company_profile.get('country', 'N/A')}")
+                
+                with col2:
+                    st.write(f"**Market Cap:** ${company_profile.get('marketCapitalization', 0):,.0f}M")
+                    st.write(f"**Shares Outstanding:** {company_profile.get('shareOutstanding', 0):,.0f}M")
+                    st.write(f"**IPO Date:** {company_profile.get('ipo', 'N/A')}")
+                    st.write(f"**Phone:** {company_profile.get('phone', 'N/A')}")
+                    if company_profile.get('weburl'):
+                        st.write(f"**Website:** {company_profile.get('weburl')}")
+                
+                with st.expander("📊 Raw Company Profile Data"):
+                    st.json(company_profile)
+            else:
+                st.error("❌ Failed to fetch company profile")
+            
+            # 3. FINANCIAL METRICS (RAW)
+            st.write("### 📊 Financial Metrics")
+            if basic_financials:
+                if 'metric' in basic_financials:
+                    metrics = basic_financials['metric']
+                    
+                    # Key metrics in columns
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.write("**Valuation:**")
+                        st.write(f"P/E Ratio: {metrics.get('peBasicExclExtraTTM', 'N/A')}")
+                        st.write(f"P/B Ratio: {metrics.get('pbAnnual', 'N/A')}")
+                        st.write(f"P/S Ratio: {metrics.get('psAnnual', 'N/A')}")
+                    
+                    with col2:
+                        st.write("**Profitability:**")
+                        st.write(f"EPS (TTM): ${metrics.get('epsBasicExclExtraTTM', 'N/A')}")
+                        st.write(f"ROE: {metrics.get('roeTTM', 'N/A')}%")
+                        st.write(f"ROA: {metrics.get('roaTTM', 'N/A')}%")
+                    
+                    with col3:
+                        st.write("**Growth:**")
+                        st.write(f"Revenue Growth: {metrics.get('revenueGrowthTTMYoy', 'N/A')}%")
+                        st.write(f"EPS Growth: {metrics.get('epsGrowthTTMYoy', 'N/A')}%")
+                    
+                    with col4:
+                        st.write("**Financial Health:**")
+                        st.write(f"Current Ratio: {metrics.get('currentRatioAnnual', 'N/A')}")
+                        st.write(f"Debt/Equity: {metrics.get('totalDebt/totalEquityAnnual', 'N/A')}")
+                
+                with st.expander("📊 Raw Financial Data"):
+                    st.json(basic_financials)
+            else:
+                st.error("❌ Failed to fetch financial metrics")
+            
+            # 4. ANALYST RECOMMENDATIONS (RAW)
+            st.write("### 👥 Analyst Recommendations")
+            if recommendations and len(recommendations) > 0:
+                latest_rec = recommendations[0]
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("**Latest Recommendations:**")
+                    st.write(f"Strong Buy: {latest_rec.get('strongBuy', 0)}")
+                    st.write(f"Buy: {latest_rec.get('buy', 0)}")
+                    st.write(f"Hold: {latest_rec.get('hold', 0)}")
+                    st.write(f"Sell: {latest_rec.get('sell', 0)}")
+                    st.write(f"Strong Sell: {latest_rec.get('strongSell', 0)}")
+                
+                with col2:
+                    st.write("**Recommendation Trend:**")
+                    for i, rec in enumerate(recommendations[:3]):
+                        period = rec.get('period', f'Period {i+1}')
+                        total = rec.get('strongBuy', 0) + rec.get('buy', 0) + rec.get('hold', 0) + rec.get('sell', 0) + rec.get('strongSell', 0)
+                        st.write(f"{period}: {total} analysts")
+                
+                with st.expander("📊 Raw Recommendations Data"):
+                    st.json(recommendations)
+            else:
+                st.error("❌ Failed to fetch analyst recommendations")
+            
+            # 5. EARNINGS CALENDAR (RAW)
+            st.write("### 📅 Earnings Calendar")
+            if earnings:
+                if 'earningsCalendar' in earnings and len(earnings['earningsCalendar']) > 0:
+                    for earning in earnings['earningsCalendar'][:3]:  # Show next 3 earnings
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.write(f"**Date:** {earning.get('date', 'N/A')}")
+                        with col2:
+                            st.write(f"**EPS Estimate:** ${earning.get('epsEstimate', 'N/A')}")
+                        with col3:
+                            st.write(f"**Revenue Estimate:** ${earning.get('revenueEstimate', 'N/A'):,.0f}M" if earning.get('revenueEstimate') else 'N/A')
+                else:
+                    st.write("No upcoming earnings data available")
+                
+                with st.expander("📊 Raw Earnings Data"):
+                    st.json(earnings)
+            else:
+                st.error("❌ Failed to fetch earnings calendar")
+            
+            # 6. INSIDER TRANSACTIONS (RAW)
+            st.write("### 👔 Insider Transactions")
+            if insider_data and 'data' in insider_data and len(insider_data['data']) > 0:
+                st.write(f"**Total Transactions:** {len(insider_data['data'])}")
+                
+                # Show recent transactions
+                for i, transaction in enumerate(insider_data['data'][:5]):  # Show last 5
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.write(f"**Name:** {transaction.get('name', 'N/A')}")
+                    with col2:
+                        st.write(f"**Shares:** {transaction.get('share', 'N/A'):,}")
+                    with col3:
+                        st.write(f"**Price:** ${transaction.get('price', 'N/A')}")
+                    with col4:
+                        st.write(f"**Date:** {transaction.get('transactionDate', 'N/A')}")
+                
+                with st.expander("📊 Raw Insider Data"):
+                    st.json(insider_data)
+            else:
+                st.error("❌ Failed to fetch insider transactions")
+            
+            # 7. COMPANY NEWS (RAW)
+            st.write("### 📰 Recent Company News")
+            if company_news and len(company_news) > 0:
+                for i, news in enumerate(company_news[:5]):  # Show last 5 news
+                    with st.expander(f"📰 {news.get('headline', 'No headline')[:100]}..."):
+                        st.write(f"**Source:** {news.get('source', 'N/A')}")
+                        st.write(f"**Date:** {datetime.fromtimestamp(news.get('datetime', 0)).strftime('%Y-%m-%d %H:%M:%S') if news.get('datetime') else 'N/A'}")
+                        st.write(f"**Summary:** {news.get('summary', 'No summary available')}")
+                        if news.get('url'):
+                            st.write(f"**URL:** {news.get('url')}")
+                
+                with st.expander("📊 Raw News Data"):
+                    st.json(company_news)
+            else:
+                st.error("❌ Failed to fetch company news")
+            
+            # 8. API USAGE SUMMARY
+            st.write("### 📊 API Data Summary")
+            data_status = {
+                "Real-time Quote": "✅" if quote_data else "❌",
+                "Company Profile": "✅" if company_profile else "❌", 
+                "Financial Metrics": "✅" if basic_financials else "❌",
+                "Analyst Recommendations": "✅" if recommendations else "❌",
+                "Earnings Calendar": "✅" if earnings else "❌",
+                "Insider Transactions": "✅" if insider_data else "❌",
+                "Company News": "✅" if company_news else "❌"
+            }
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                for key, value in list(data_status.items())[:4]:
+                    st.write(f"{value} {key}")
+            with col2:
+                for key, value in list(data_status.items())[4:]:
+                    st.write(f"{value} {key}")
         
         # Show detailed scalping information
         st.subheader("📊 Detailed Analysis")
